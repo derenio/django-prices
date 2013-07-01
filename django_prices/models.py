@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.db import models
 from django.conf import settings
 from prices import Price
@@ -16,16 +17,20 @@ class PriceField(BaseField):
         self.currency = currency
         super(PriceField, self).__init__(verbose_name, **kwargs)
 
+    def get_currency(self):
+        return self.currency
+
     def to_python(self, value):
+        currency = self.get_currency()
         if isinstance(value, Price):
-            if value.currency != self.currency:
+            if value.currency != currency:
                 raise ValueError('Invalid currency: %r (expected %r)' % (
-                    value.currency, self.currency))
+                    value.currency, currency))
             return value
         value = super(PriceField, self).to_python(value)
         if value is None:
             return value
-        return Price(value, currency=self.currency)
+        return Price(value, currency=currency)
 
     def get_prep_value(self, value):
         value = self.to_python(value)
@@ -46,7 +51,7 @@ class PriceField(BaseField):
         return super(PriceField, self).value_to_string(value)
 
     def formfield(self, **kwargs):
-        defaults = {'currency': self.currency,
+        defaults = {'currency': self.get_currency(),
                     'form_class': forms.PriceField}
         defaults.update(kwargs)
         return super(PriceField, self).formfield(**defaults)
